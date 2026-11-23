@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <queue>
 #include <string>
 #include <vector>
@@ -15,10 +16,48 @@ struct ByPriority {
         if (a.priority == b.priority) return a.id > b.id;
         return a.priority > b.priority;
     }
+    void saveTasks(const vector<Task>& tasks) {
+    ofstream out("tasks.txt");
+    for (const Task& t : tasks)
+        out << t.id << " " << t.priority << " " << t.done << "\n"
+            << t.title << "\n";
+}
+
+int loadTasks(vector<Task>& tasks) {
+    ifstream in("tasks.txt");
+    int maxId = 0;
+    Task t;
+    while (in >> t.id >> t.priority >> t.done) {
+        in.ignore();
+        getline(in, t.title);
+        tasks.push_back(t);
+        if (t.id > maxId) maxId = t.id;
+    }
+    return maxId;
+}
 };
+void saveTasks(const vector<Task>& tasks) {
+    ofstream out("tasks.txt");
+    for (const Task& t : tasks)
+        out << t.id << " " << t.priority << " " << t.done << "\n"
+            << t.title << "\n";
+}
+
+int loadTasks(vector<Task>& tasks) {
+    ifstream in("tasks.txt");
+    int maxId = 0;
+    Task t;
+    while (in >> t.id >> t.priority >> t.done) {
+        in.ignore();
+        getline(in, t.title);
+        tasks.push_back(t);
+        if (t.id > maxId) maxId = t.id;
+    }
+    return maxId;
+}
 int main() {
     vector<Task> tasks;
-    int nextId = 1;
+    int nextId = loadTasks(tasks) + 1;
     int choice;
 
     do {
@@ -76,5 +115,6 @@ int main() {
         cout << "P" << t.priority << " - " << t.title << "\n";
     }
 }
+        saveTasks(tasks);
     } while (choice != 0);
 }
