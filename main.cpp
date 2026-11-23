@@ -1,4 +1,5 @@
 #include <iostream>
+#include <windows.h>
 #include <fstream>
 #include <queue>
 #include <string>
@@ -11,31 +12,14 @@ struct Task {
     int priority;      // 1 = most urgent
     bool done = false;
 };
+
 struct ByPriority {
     bool operator()(const Task& a, const Task& b) const {
         if (a.priority == b.priority) return a.id > b.id;
         return a.priority > b.priority;
     }
-    void saveTasks(const vector<Task>& tasks) {
-    ofstream out("tasks.txt");
-    for (const Task& t : tasks)
-        out << t.id << " " << t.priority << " " << t.done << "\n"
-            << t.title << "\n";
-}
-
-int loadTasks(vector<Task>& tasks) {
-    ifstream in("tasks.txt");
-    int maxId = 0;
-    Task t;
-    while (in >> t.id >> t.priority >> t.done) {
-        in.ignore();
-        getline(in, t.title);
-        tasks.push_back(t);
-        if (t.id > maxId) maxId = t.id;
-    }
-    return maxId;
-}
 };
+
 void saveTasks(const vector<Task>& tasks) {
     ofstream out("tasks.txt");
     for (const Task& t : tasks)
@@ -55,20 +39,44 @@ int loadTasks(vector<Task>& tasks) {
     }
     return maxId;
 }
+
+void printReminder(const vector<Task>& tasks) {
+    priority_queue<Task, vector<Task>, ByPriority> pq;
+    for (const Task& t : tasks)
+        if (!t.done) pq.push(t);
+
+    if (pq.empty()) {
+        cout << "\nAll done! Enjoy your break.\n";
+        return;
+    }
+
+    cout << "\n*** REMINDER: " << pq.size() << " task(s) pending ***\n";
+    while (!pq.empty()) {
+        Task t = pq.top();
+        pq.pop();
+        cout << "P" << t.priority << " - " << t.title << "\n   ";
+        if (t.priority <= 2)
+            cout << "Delaying this piles up stress and missed deadlines.\n";
+        else
+            cout << "Small tasks left undone turn into big ones later.\n";
+    }
+}
+
 int main() {
     vector<Task> tasks;
     int nextId = loadTasks(tasks) + 1;
     int choice;
 
     do {
-        cout << "\n1. Add task\n2. List tasks\n3. Complete task\n4. Show by urgency\n0. Exit\n> ";
+        cout << "\n1. Add task\n2. List tasks\n3. Complete task\n"
+             << "4. Show by urgency\n5. Start reminders\n0. Exit\n> ";
         if (!(cin >> choice)) {
-    cin.clear();
-    cin.ignore(10000, '\n');
-    choice = -1;
-    cout << "Please enter a number.\n";
-    continue;
-}
+            cin.clear();
+            cin.ignore(10000, '\n');
+            choice = -1;
+            cout << "Please enter a number.\n";
+            continue;
+        }
 
         if (choice == 1) {
             Task t;
@@ -78,10 +86,10 @@ int main() {
             getline(cin, t.title);
             cout << "Priority (1-5): ";
             while (!(cin >> t.priority) || t.priority < 1 || t.priority > 5) {
-    cin.clear();
-    cin.ignore(10000, '\n');
-    cout << "Enter a number from 1 to 5: ";
-}
+                cin.clear();
+                cin.ignore(10000, '\n');
+                cout << "Enter a number from 1 to 5: ";
+            }
             tasks.push_back(t);
         } else if (choice == 2) {
             for (const Task& t : tasks) {
@@ -103,18 +111,28 @@ int main() {
                 }
             }
             if (!found) cout << "No task with that ID.\n";
-        } else if (choice == 4) {   
-    priority_queue<Task, vector<Task>, ByPriority> pq;
-    for (const Task& t : tasks)
-        if (!t.done) pq.push(t);
+        } else if (choice == 4) {
+            priority_queue<Task, vector<Task>, ByPriority> pq;
+            for (const Task& t : tasks)
+                if (!t.done) pq.push(t);
 
-    if (pq.empty()) cout << "Nothing pending. Great job!\n";
-    while (!pq.empty()) {
-        Task t = pq.top();
-        pq.pop();
-        cout << "P" << t.priority << " - " << t.title << "\n";
-    }
-}
+            if (pq.empty()) cout << "Nothing pending. Great job!\n";
+            while (!pq.empty()) {
+                Task t = pq.top();
+                pq.pop();
+                cout << "P" << t.priority << " - " << t.title << "\n";
+            }
+        } else if (choice == 5) {
+            int minutes = 1;
+            cout << "Remind every how many minutes? ";
+            cin >> minutes;
+            if (minutes < 1) minutes = 1;
+            cout << "Reminders running. Press Ctrl+C to stop.\n";
+            while (true) {
+                printReminder(tasks);
+                Sleep(minutes * 60 * 1000);
+            }
+        }
         saveTasks(tasks);
     } while (choice != 0);
 }
